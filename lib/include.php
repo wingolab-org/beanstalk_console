@@ -680,83 +680,17 @@ class Console {
         $jobList = array();
         $limit = null;
 
-        if ($searchStr === null or $searchStr === '')
+        if ($searchStr === null or $searchStr === ''){
             return false;
+	    }
 
-        if (isset($_GET['limit'])) {
-            $limit = intval($_GET['limit']);
+        $job = $this->interface->_client->peek($searchStr);
+        
+        if($job){
+            $jobList[$this->interface->_client->statsJob($job)->state][$searchStr] = $job;
+            $jobList['total'] = 1;
+            $this->searchResults = $jobList;
         }
-
-        foreach ($states as $state) {
-            $jobList[$state] = $this->findJobsByState($GLOBALS['tube'], $state, $searchStr, $limit);
-            $jobList['total']+=count($jobList[$state]);
-        }
-
-        $this->searchResults = $jobList;
-    }
-
-    private function findJobsByState($tube, $state, $searchStr, $limit = 25) {
-        $jobList = array();
-        $job = null;
-
-        try {
-            $stats = $this->interface->getServerStats();
-        } catch (Exception $e) {
-            return $jobList;
-        }
-
-        $ready = $stats['current-jobs-ready']['value'];
-        $reserved = $stats['current-jobs-reserved']['value'];
-        $delayed = $stats['current-jobs-delayed']['value'];
-        $buried = $stats['current-jobs-buried']['value'];
-        $deleted = $stats['cmd-delete']['value'];
-
-        try {
-            switch ($state) {
-                case 'ready':
-                    $job = $this->interface->_client->useTube($tube)->peekReady();
-                    break;
-                case 'delayed':
-                    $job = $this->interface->_client->useTube($tube)->peekDelayed();
-                    break;
-                case 'buried':
-                    $job = $this->interface->_client->useTube($tube)->peekBuried();
-                    break;
-            }
-        } catch (Exception $e) {
-            
-        }
-
-        if ($job === null)
-            return $jobList;
-
-        $jobList = array();
-        $lastId = $ready + $reserved + $delayed + $buried + $deleted;
-
-        $added = 0;
-        for ($id = $job->getId(); $id <= $lastId; $id++) {
-            try {
-                /** @var Pheanstalk_Job $job */
-                $job = $this->interface->_client->peek($id);
-                if ($job) {
-                    $jobStats = $this->interface->_client->statsJob($job);
-                    if ($jobStats->tube === $tube &&
-                        $jobStats->state === $state &&
-                        strpos($job->getData(), $searchStr) !== false
-                    ) {
-                        $jobList[$id] = $job;
-                        $added++;
-                    }
-                }
-            } catch (Pheanstalk_Exception_ServerException $e) {
-                
-            }
-            if ($added >= $limit || (microtime(true) - $this->actionTimeStart) > $limit) {
-                break;
-            }
-        }
-
-        return $jobList;
     }
 
     private function _storeSampleJob($post, $jobData) {
