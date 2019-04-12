@@ -27,7 +27,11 @@ if ($searchResults['total'] > 0) {
                                 <tr>
                                     <td><?php echo $job->getId(); ?></td>
                                     <td><?php echo $state; ?></td>
-                                    <td class="ellipsize"><?php echo htmlspecialchars($job->getData()); ?></td>
+                                    <td>
+                                        <textarea style="height:200px;width:100%;">
+                                            <?php echo htmlspecialchars($job->getData()); ?>
+                                        </textarea>
+                                    </td>
                                     <td>
                                         <div class="dropdown btn-group-xs">
                                             <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
